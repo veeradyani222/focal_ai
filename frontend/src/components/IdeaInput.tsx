@@ -17,25 +17,25 @@ export default function IdeaInput({ value, onChange, onSubmit, disabled }: IdeaI
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-        Enter Your Product Idea
+      <h2 className="text-3xl font-bold text-indigo-900 mb-4">
+        Share Your Product Vision
       </h2>
-      <p className="text-gray-600 mb-6">
-        Describe your product idea in detail. Our AI stakeholders will analyze it from multiple perspectives.
+      <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+        Describe your idea in detail, and our AI stakeholders will refine it into actionable requirements.
       </p>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="idea" className="block text-sm font-medium text-gray-700 mb-2">
-            Product Idea Description
+            Your Idea
           </label>
           <textarea
             id="idea"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="e.g., A food delivery app that connects local restaurants with customers, featuring real-time tracking, personalized recommendations, and a loyalty program..."
-            className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            rows={6}
+            placeholder="e.g., An e-book platform connecting authors directly with readers, featuring secure uploads, real-time sales tracking, and personalized recommendations..."
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-400 resize-none transition-all duration-200"
+            rows={8}
             disabled={disabled}
           />
         </div>
@@ -43,19 +43,27 @@ export default function IdeaInput({ value, onChange, onSubmit, disabled }: IdeaI
         <button
           type="submit"
           disabled={!value.trim() || disabled}
-          className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
-          {disabled ? 'Processing...' : 'Refine Requirements with AI Stakeholders'}
+          {disabled ? 'Processing...' : 'Refine with AI Stakeholders'}
         </button>
       </form>
       
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-medium text-blue-900 mb-2">💡 Tips for better results:</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Be specific about the problem you're solving</li>
-          <li>• Include target audience and use cases</li>
-          <li>• Mention key features and functionality</li>
-          <li>• Consider business model and monetization</li>
+      <div className="mt-6 p-5 bg-indigo-50 rounded-xl">
+        <h3 className="font-semibold text-indigo-900 mb-3">💡 Pro Tips</h3>
+        <ul className="text-sm text-indigo-800 space-y-2">
+          <li className="flex items-start">
+            <span className="mr-2">•</span> Specify the problem your product solves
+          </li>
+          <li className="flex items-start">
+            <span className="mr-2">•</span> Define your target audience and use cases
+          </li>
+          <li className="flex items-start">
+            <span className="mr-2">•</span> Highlight key features and functionality
+          </li>
+          <li className="flex items-start">
+            <span className="mr-2">•</span> Consider your business model
+          </li>
         </ul>
       </div>
     </div>
