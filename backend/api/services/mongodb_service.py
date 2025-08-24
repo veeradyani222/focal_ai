@@ -10,20 +10,80 @@ class MongoDBService:
     """Service for MongoDB operations"""
     
     def __init__(self):
-        self.client = MongoClient(settings.MONGODB_URI)
-        self.db = self.client[settings.MONGODB_DB_NAME]
+        # MongoDB connection configuration
+        self.mongodb_uri = settings.MONGODB_URI
+        self.db_name = settings.MONGODB_DB_NAME
         
-        # Collections
-        self.ideas_collection = self.db.ideas
-        self.debates_collection = self.db.debates
-        self.requirements_collection = self.db.requirements
-        self.users_collection = self.db.users
-        self.credit_transactions_collection = self.db.credit_transactions
+        if not self.mongodb_uri:
+            raise ValueError("MONGODB_URI is not configured in settings")
+        
+        try:
+            # Connect to MongoDB with proper options
+            self.client = MongoClient(
+                self.mongodb_uri,
+                serverSelectionTimeoutMS=10000,
+                connectTimeoutMS=10000,
+                socketTimeoutMS=20000,
+                maxPoolSize=10,
+                retryWrites=True,
+                w='majority'
+            )
+            
+            # Test the connection
+            self.client.admin.command('ping')
+            self.db = self.client[self.db_name]
+            
+            # Initialize collections
+            self.ideas_collection = self.db.ideas
+            self.debates_collection = self.db.debates
+            self.requirements_collection = self.db.requirements
+            self.users_collection = self.db.users
+            self.credit_transactions_collection = self.db.credit_transactions
+            
+            # Create indexes for better performance
+            self._create_indexes()
+            
+            print(f"✅ MongoDB connected successfully to {self.db_name}")
+            
+        except Exception as e:
+            print(f"❌ MongoDB connection failed: {str(e)}")
+            raise Exception(f"Failed to connect to MongoDB: {str(e)}")
+    
+    def _create_indexes(self):
+        """Create database indexes for better performance"""
+        try:
+            # User indexes
+            self.users_collection.create_index("email", unique=True)
+            self.users_collection.create_index("created_at")
+            
+            # Idea indexes
+            self.ideas_collection.create_index("created_at")
+            self.ideas_collection.create_index("user_id")
+            
+            # Debate indexes
+            self.debates_collection.create_index("idea_id")
+            self.debates_collection.create_index("round_number")
+            
+            # Requirements indexes
+            self.requirements_collection.create_index("idea_id")
+            self.requirements_collection.create_index("created_at")
+            
+            # Transaction indexes
+            self.credit_transactions_collection.create_index("user_id")
+            self.credit_transactions_collection.create_index("created_at")
+            
+            print("✅ Database indexes created successfully")
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to create some indexes: {str(e)}")
     
     def save_idea(self, idea_data):
         """Save idea to MongoDB"""
         idea_data['created_at'] = datetime.utcnow()
         idea_data['updated_at'] = datetime.utcnow()
+        # Ensure user_id is included
+        if 'user_id' not in idea_data:
+            raise ValueError("user_id is required for idea creation")
         result = self.ideas_collection.insert_one(idea_data)
         return str(result.inserted_id)
     
@@ -123,35 +183,49 @@ class MongoDBService:
     # User Management Methods
     def create_user(self, user_data):
         """Create a new user with initial 10 credits"""
-        user_doc = {
-            'email': user_data['email'],
-            'name': user_data.get('name', ''),
-            'avatar': user_data.get('picture', ''),  # Google OAuth provides 'picture' field
-            'credits': 10,  # Initial credits
-            'created_at': datetime.utcnow(),
-            'last_login': datetime.utcnow(),
-            'is_active': True
-        }
-        
-        result = self.users_collection.insert_one(user_doc)
-        user_id = str(result.inserted_id)
-        
-        # Log initial credit transaction
-        self.log_credit_transaction(
-            user_id=user_id,
-            transaction_type='initial',
-            amount=10,
-            description='Initial credits upon account creation'
-        )
-        
-        return user_id
+        try:
+            user_doc = {
+                'email': user_data['email'],
+                'name': user_data.get('name', ''),
+                'avatar': user_data.get('picture', ''),  # Google OAuth provides 'picture' field
+                'credits': 10,  # Initial credits
+                'created_at': datetime.utcnow(),
+                'last_login': datetime.utcnow(),
+                'is_active': True
+            }
+            
+            print(f"🔧 Creating user: {user_data['email']}")
+            result = self.users_collection.insert_one(user_doc)
+            user_id = str(result.inserted_id)
+            
+            # Log initial credit transaction
+            self.log_credit_transaction(
+                user_id=user_id,
+                transaction_type='initial',
+                amount=10,
+                description='Initial credits upon account creation'
+            )
+            
+            print(f"✅ User created successfully with ID: {user_id}")
+            return user_id
+            
+        except Exception as e:
+            print(f"❌ Error creating user: {str(e)}")
+            raise e
     
     def get_user_by_email(self, email):
         """Get user by email"""
-        user = self.users_collection.find_one({'email': email})
-        if user:
-            user['_id'] = str(user['_id'])
-        return user
+        try:
+            user = self.users_collection.find_one({'email': email})
+            if user:
+                user['_id'] = str(user['_id'])
+                print(f"✅ User found: {email}")
+            else:
+                print(f"ℹ️ User not found: {email}")
+            return user
+        except Exception as e:
+            print(f"❌ Error getting user by email: {str(e)}")
+            return None
     
     def get_user_by_id(self, user_id):
         """Get user by ID"""
@@ -255,15 +329,20 @@ class MongoDBService:
     
     def log_credit_transaction(self, user_id, transaction_type, amount, description):
         """Log a credit transaction for audit trail"""
-        transaction_doc = {
-            'user_id': user_id,
-            'transaction_type': transaction_type,  # 'initial', 'deduction', 'addition'
-            'amount': amount,
-            'description': description,
-            'created_at': datetime.utcnow()
-        }
-        
-        self.credit_transactions_collection.insert_one(transaction_doc)
+        try:
+            transaction_doc = {
+                'user_id': user_id,
+                'transaction_type': transaction_type,  # 'initial', 'deduction', 'addition'
+                'amount': amount,
+                'description': description,
+                'created_at': datetime.utcnow()
+            }
+            
+            self.credit_transactions_collection.insert_one(transaction_doc)
+            print(f"✅ Credit transaction logged: {transaction_type} {amount} credits for user {user_id}")
+            
+        except Exception as e:
+            print(f"❌ Error logging credit transaction: {str(e)}")
     
     def get_user_transactions(self, user_id, limit=20):
         """Get user's credit transaction history"""
@@ -282,4 +361,8 @@ class MongoDBService:
     
     def close(self):
         """Close MongoDB connection"""
-        self.client.close()
+        try:
+            self.client.close()
+            print("🔌 MongoDB connection closed")
+        except:
+            pass

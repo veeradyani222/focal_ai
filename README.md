@@ -1,317 +1,180 @@
-# 🧠 Multi-Agent AI Requirement Refinement (MVP)
+# 🧠 Focal AI
 
-## 🎯 Goal
-Build an MVP that:
-1. Takes *user input* (rough product idea).  
-2. Runs a *multi-agent debate* (Business, Engineer, Designer, Customer, Product Manager) via LangChain + Gemini.  
-3. Aggregates into *refined requirements + actionable outputs*.  
-4. Displays results in a *simple UI*.  
+AI-powered requirement refinement through multi-agent stakeholder simulation. Transform your product ideas into actionable requirements using intelligent debate between AI agents representing different stakeholder perspectives.
 
----
+## ✨ Features
+
+- **Multi-Agent Debate**: AI agents simulate stakeholder discussions to refine requirements
+- **Google OAuth Integration**: Secure authentication with Google accounts
+- **Credit System**: Manage usage with a credit-based system
+- **Real-time Processing**: Get refined requirements instantly
+- **User Management**: Track ideas, requirements, and credit transactions
+- **MongoDB Integration**: Scalable data storage with automatic indexing
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 18+
-- MongoDB Atlas account
-- Google Gemini API key
 
-### 1. Clone and Setup
+- MongoDB Atlas account or local MongoDB instance
+- Google Cloud Console project with OAuth 2.0 credentials
+- Python 3.8+ and Node.js 18+
+
+### 1. Clone the Repository
+
 ```bash
 git clone <repository-url>
-cd FocalAI
+cd focal_ai
 ```
 
-### 2. Backend Setup
+### 2. Environment Setup
+
+Follow the detailed setup guide in [SETUP.md](./SETUP.md) to configure:
+
+- MongoDB connection
+- Google OAuth credentials
+- Environment variables
+
+### 3. Install Dependencies
+
 ```bash
+# Backend
 cd backend
-python -m venv venv
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
 pip install -r requirements.txt
-```
 
-### 3. Environment Configuration
-Create `.env` file in `backend/` directory:
-```env
-SECRET_KEY=your_django_secret_key
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB_NAME=focalai
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-### 4. Database Setup
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-### 5. Frontend Setup
-```bash
-cd ../frontend
+# Frontend
+cd frontend
 npm install
 ```
 
-### 6. Run the Application
+### 4. Start the Application
+
 ```bash
-# Terminal 1 - Backend (from backend directory)
+# Backend (Terminal 1)
+cd backend
 python manage.py runserver
 
-# Terminal 2 - Frontend (from frontend directory)
+# Frontend (Terminal 2)
+cd frontend
 npm run dev
 ```
 
-Visit `http://localhost:3000` to use the application!
+### 5. Access the Application
 
----
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
 
-## 🛠 Phase 1: Environment & Setup ✅
-*Objective:* Get the project skeleton ready.  
-
-- *Backend:* ✅
-  - Django project with API endpoints
-  - MongoDB integration with PyMongo
-  - LangChain + Gemini integration
-  - CORS configuration for frontend
-
-- *Frontend:* ✅
-  - Next.js 15 with TypeScript
-  - Tailwind CSS for styling
-  - Modern UI with input form + results display
-
-- *Database:* ✅
-  - MongoDB Atlas connection
-  - Collections: Ideas, Debates, Requirements
-
----
-
-## 🧠 Phase 2: AI Core (Multi-Agent Setup) ✅
-*Objective:* Build the *LangChain + Gemini multi-agent system*.  
-
-1. *Agent Personas:* ✅
-   - Business Manager → profit, scalability
-   - Engineer → technical feasibility
-   - Designer → usability, aesthetics
-   - Customer → needs, pain points
-   - Product Manager → balance trade-offs
-
-2. *Debate Logic:* ✅
-   - 2 rounds of conversation
-   - Each agent comments on input
-   - Agents respond to each other
-
-3. *Aggregator:* ✅
-   - Summarizes debate
-   - Produces refined requirements, trade-offs, next steps
-
----
-
-## 🔗 Phase 3: API Layer ✅
-*Objective:* Wrap AI core into usable APIs.  
-
-- Endpoints: ✅
-  - POST /api/refine → Input: product idea, Output: requirements doc
-  - GET /api/history → Past ideas + debates
-  - GET /api/idea/<id>/ → Detailed idea information
-
-- MongoDB storage for all data ✅
-
----
-
-## 🎨 Phase 4: Frontend (Basic UI) ✅
-*Objective:* Allow user interaction.  
-
-- Modern UI with: ✅
-  - Text input for idea
-  - Button to call /api/refine
-  - Results section showing refined requirements, trade-offs, next steps
-  - History panel with past ideas
-  - Loading states and error handling
-
----
-
-## 📊 Phase 5: Visualization (Stretch Goal) ✅
-*Objective:* Make it visually appealing for judges.  
-
-- Enhanced UI features: ✅
-  - Tabbed interface for requirements vs debate
-  - Agent badges and round indicators
-  - Responsive design
-  - Professional styling
-
----
-
-## 🚀 Phase 6: Polish for Demo ✅
-*Objective:* Make it hackathon-ready.  
-
-- System features: ✅
-  - Works in <2 minutes end-to-end
-  - Error handling for API failures
-  - Professional UI copy
-  - Complete setup instructions
-
----
-
-## 🔥 Demo Script (for Judges)
-
-### 1. Problem Statement
-"Requirement gathering is slow and subjective. Traditional stakeholder meetings take hours and often result in conflicting priorities."
-
-### 2. Solution
-"Multi-Agent AI simulating stakeholders. Our system uses 5 AI agents representing different perspectives to analyze product ideas in minutes."
-
-### 3. Live Demo
-1. Enter idea: "A food delivery app with real-time tracking"
-2. Click "Refine Requirements with AI Stakeholders"
-3. Watch as 5 agents debate the idea
-4. View refined requirements, trade-offs, and next steps
-
-### 4. Real World Impact
-- Saves hours of meetings
-- Fast consensus building
-- Scalable revenue model validation
-- Reduces time-to-market
-
----
-
-## 🏗 Architecture
+## 🏗️ Architecture
 
 ### Backend (Django + MongoDB)
-```
-backend/
-├── focalai_backend/     # Django project settings
-├── api/                 # Main app
-│   ├── services/        # AI and database services
-│   │   ├── multi_agent.py    # LangChain + Gemini agents
-│   │   └── mongodb_service.py # MongoDB operations
-│   ├── views.py         # API endpoints
-│   └── urls.py          # URL routing
-└── requirements.txt     # Python dependencies
-```
+- **Authentication**: Google OAuth token verification
+- **Database**: MongoDB with automatic indexing
+- **AI Integration**: Gemini API for requirement refinement
+- **Multi-Agent System**: Simulated stakeholder debates
 
-### Frontend (Next.js + TypeScript)
-```
-frontend/
-├── src/
-│   ├── app/             # Next.js app router
-│   │   └── page.tsx     # Main application page
-│   └── components/      # React components
-│       ├── IdeaInput.tsx
-│       ├── ResultsDisplay.tsx
-│       ├── HistoryPanel.tsx
-│       └── LoadingSpinner.tsx
-└── package.json         # Node.js dependencies
-```
+### Frontend (Next.js + NextAuth)
+- **Authentication**: NextAuth.js with Google provider
+- **State Management**: React Context for user data
+- **UI**: Modern, responsive design with Framer Motion
 
----
+## 🔐 Authentication Flow
+
+1. User signs in with Google OAuth
+2. Frontend receives access token
+3. Backend verifies token with Google
+4. User is automatically created/authenticated
+5. All API calls include the access token
+6. Credits are managed per authenticated user
+
+## 💰 Credit System
+
+- **Initial Credits**: 10 credits upon account creation
+- **Requirement Generation**: 2 credits per refinement
+- **Credit Tracking**: Full transaction history
+- **Automatic Deduction**: Credits deducted before processing
+
+## 📊 API Endpoints
+
+### Authentication Required
+- `POST /api/refine/` - Generate refined requirements
+- `GET /api/users/profile/` - Get user profile
+- `POST /api/users/deduct-credits/` - Deduct credits
+- `GET /api/users/transactions/` - Get transaction history
+
+### Public
+- `GET /api/history/` - Get idea history
+- `GET /api/idea/<id>/` - Get idea details
+
+## 🗄️ Database Schema
+
+### Collections
+- **users**: User profiles, credits, authentication
+- **ideas**: Product ideas with metadata
+- **debates**: Multi-agent debate logs
+- **requirements**: Refined requirements and sections
+- **credit_transactions**: Credit usage history
+
+### Indexes
+- Email uniqueness for users
+- Timestamp-based sorting
+- User-based filtering
+- Performance optimization
 
 ## 🔧 Configuration
 
 ### Environment Variables
-- `SECRET_KEY`: Django secret key
-- `MONGODB_URI`: MongoDB Atlas connection string
-- `MONGODB_DB_NAME`: Database name (default: focalai)
-- `GEMINI_API_KEY`: Google Gemini API key
 
-### API Endpoints
-- `POST /api/refine/`: Submit product idea for refinement
-- `GET /api/history/`: Get recent ideas and their results
-- `GET /api/idea/<id>/`: Get detailed information about a specific idea
+#### Backend
+- `MONGODB_URI`: MongoDB connection string
+- `MONGODB_DB_NAME`: Database name
+- `GOOGLE_CLIENT_ID`: Google OAuth client ID
+- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
+- `GEMINI_API_KEY`: Gemini AI API key
 
----
+#### Frontend
+- `GOOGLE_CLIENT_ID`: Google OAuth client ID
+- `GOOGLE_SECRET`: Google OAuth client secret
+- `NEXTAUTH_SECRET`: NextAuth.js secret
+- `NEXTAUTH_URL`: Application URL
 
-## 🎯 Usage Example
+## 🚀 Production Deployment
 
-1. **Start the application** (see Quick Start above)
+1. Set up production MongoDB instance
+2. Configure production Google OAuth credentials
+3. Set `DEBUG=False` in Django
+4. Use production WSGI server (Gunicorn)
+5. Set up reverse proxy (Nginx)
+6. Enable HTTPS
+7. Configure proper logging and monitoring
 
-2. **Enter a product idea**:
-   ```
-   "A mobile app that helps people find and book local fitness classes, 
-   with real-time availability, instructor ratings, and personalized 
-   recommendations based on user preferences and location."
-   ```
+## 🐛 Troubleshooting
 
-3. **Click "Refine Requirements with AI Stakeholders"**
+Common issues and solutions are documented in [SETUP.md](./SETUP.md). Key areas:
 
-4. **View results**:
-   - **Refined Requirements**: 5-8 actionable requirements
-   - **Trade-offs**: Key decisions and their implications
-   - **Next Steps**: Concrete action items with timelines
-   - **AI Debate**: Full conversation between stakeholders
-
----
-
-## 🚀 Deployment
-
-### Backend (Django)
-```bash
-# Production settings
-DEBUG = False
-ALLOWED_HOSTS = ['your-domain.com']
-# Configure production database
-# Set up static files
-python manage.py collectstatic
-```
-
-### Frontend (Next.js)
-```bash
-npm run build
-npm start
-# Or deploy to Vercel/Netlify
-```
-
----
-
-## 🔍 Troubleshooting
-
-### Common Issues
-1. **MongoDB Connection**: Ensure your connection string is correct and network access is configured
-2. **Gemini API**: Verify your API key is valid and has sufficient quota
-3. **CORS Errors**: Check that backend CORS settings allow frontend domain
-4. **Port Conflicts**: Ensure ports 8000 (Django) and 3000 (Next.js) are available
-
-### Debug Mode
-```bash
-# Backend
-python manage.py runserver --verbosity=2
-
-# Frontend
-npm run dev -- --debug
-```
-
----
-
-## 📈 Future Enhancements
-
-- [ ] Real-time debate streaming
-- [ ] Export requirements to PDF/Word
-- [ ] Integration with project management tools
-- [ ] Advanced visualization (mind maps, flowcharts)
-- [ ] Multi-language support
-- [ ] Custom agent personas
-- [ ] A/B testing for different debate strategies
-
----
+- MongoDB connection problems
+- Google OAuth configuration
+- Authentication token issues
+- Credit system problems
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
----
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## 🆘 Support
+
+For support and questions:
+1. Check the troubleshooting section
+2. Review the setup guide
+3. Check application logs
+4. Open an issue on GitHub
+
 ---
 
-**Built with ❤️ using Django, Next.js, LangChain, and Gemini AI**#   f o c a l _ a i  
- 
+**Note**: This application requires proper configuration of MongoDB and Google OAuth before it will function. Follow the setup guide carefully to ensure all components are properly configured.

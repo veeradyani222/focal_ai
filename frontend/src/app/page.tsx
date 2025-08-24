@@ -3,14 +3,25 @@
 import { motion } from 'framer-motion';
 import { Brain, Users, Zap, Target, ArrowRight, LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useEffect } from 'react';
 
 export default function Landing() {
   const { login, isAuthenticated, isLoading, redirectToDashboard } = useAuth();
 
-  // If user is authenticated, redirect to dashboard
+  // Use useEffect to handle redirects instead of calling during render
+  useEffect(() => {
+    if (isAuthenticated) {
+      redirectToDashboard();
+    }
+  }, [isAuthenticated, redirectToDashboard]);
+
+  // If user is authenticated, show loading or return null
   if (isAuthenticated) {
-    redirectToDashboard();
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-cyan-900 flex items-center justify-center">
+        <div className="text-white text-xl">Redirecting to dashboard...</div>
+      </div>
+    );
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-cyan-900 relative overflow-hidden">
@@ -173,6 +184,7 @@ export default function Landing() {
           <motion.h3
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             viewport={{ once: true }}
             className="text-3xl font-bold text-white mb-6"
           >

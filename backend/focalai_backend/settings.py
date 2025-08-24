@@ -84,6 +84,8 @@ WSGI_APPLICATION = 'focalai_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# We're using MongoDB directly via PyMongo, not Django's ORM
+# This is a custom setup for our MongoDB service
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -95,8 +97,22 @@ DATABASES = {
 MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
 MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'focalai')
 
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_SECRET', '')
+
 # Gemini API Configuration
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
+# Validate required environment variables
+if not MONGODB_URI:
+    raise ValueError("MONGODB_URI environment variable is required")
+
+if not GOOGLE_CLIENT_ID:
+    raise ValueError("GOOGLE_CLIENT_ID environment variable is required")
+
+if not GOOGLE_CLIENT_SECRET:
+    raise ValueError("GOOGLE_SECRET environment variable is required")
 
 
 # Password validation

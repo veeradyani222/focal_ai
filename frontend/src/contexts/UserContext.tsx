@@ -33,29 +33,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // Fetch user data when session changes
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.email) {
+    if (status === 'authenticated' && session?.idToken) {
       fetchUserData();
     } else if (status === 'unauthenticated') {
       setUser(null);
       setLoading(false);
     }
-  }, [status, session?.user?.email]);
+  }, [status, session?.idToken]);
 
   const fetchUserData = async () => {
-    if (!session?.user?.email) return;
+    if (!session?.idToken) return;
     
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:8000/api/users/profile/${encodeURIComponent(session.user.email)}/`);
+      const response = await fetch('http://localhost:8000/api/users/profile/', {
+        headers: {
+          'Authorization': `Bearer ${session.idToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
       const data = await response.json();
       
       if (data.success) {
         setUser(data.user);
       } else {
-        // If user doesn't exist, create them
-        await createUser();
+        setError(data.error || 'Failed to fetch user data');
       }
     } catch (err) {
       setError('Failed to fetch user data');
@@ -65,52 +70,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createUser = async () => {
-    if (!session?.user?.email) return;
-    
-    try {
-      const userData = {
-        email: session.user.email,
-        name: session.user.name || '',
-        avatar: session.user.image || ''
-      };
-      
-      const response = await fetch('http://localhost:8000/api/users/create/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setUser(data.user);
-      } else {
-        setError(data.error || 'Failed to create user');
-      }
-    } catch (err) {
-      setError('Failed to create user');
-      console.error('Error creating user:', err);
-    }
-  };
-
   const refreshUser = async () => {
     await fetchUserData();
   };
 
   const deductCredits = async (amount: number): Promise<boolean> => {
-    if (!user) return false;
+    if (!user || !session?.idToken) return false;
     
     try {
       const response = await fetch('http://localhost:8000/api/users/deduct-credits/', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${session.idToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: user._id,
           amount: amount,
           description: 'Requirement generation'
         }),

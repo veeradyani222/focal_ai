@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export function useAuth() {
   const { data: session, status } = useSession();
@@ -24,11 +25,17 @@ export function useAuth() {
   };
 
   const redirectToDashboard = () => {
-    router.push('/dashboard');
+    // Use setTimeout to defer the navigation to the next tick
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 0);
   };
 
   const redirectToHome = () => {
-    router.push('/');
+    // Use setTimeout to defer the navigation to the next tick
+    setTimeout(() => {
+      router.push('/');
+    }, 0);
   };
 
   return {

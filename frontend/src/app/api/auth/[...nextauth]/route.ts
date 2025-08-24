@@ -6,6 +6,13 @@ const handler = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_SECRET!,
+      authorization: {
+        params: {
+          scope: 'openid email profile',
+          access_type: 'offline',
+          response_type: 'code'
+        }
+      }
     }),
   ],
   pages: {
@@ -16,11 +23,23 @@ const handler = NextAuth({
     async jwt({ token, user, account }) {
       // Log for debugging
       console.log('JWT Callback:', { token, user, account });
+      
+      // If we have an account (first sign in), save the ID token
+      if (account) {
+        token.idToken = account.id_token;
+        console.log('ID token saved to JWT:', token.idToken);
+      }
+      
       return token;
     },
     async session({ session, token }) {
       // Log for debugging
       console.log('Session Callback:', { session, token });
+      
+      // Add ID token to session (this is what the backend needs)
+      session.idToken = token.idToken;
+      console.log('ID token added to session:', session.idToken);
+      
       return session;
     },
     async redirect({ url, baseUrl }) {

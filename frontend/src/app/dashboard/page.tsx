@@ -56,6 +56,12 @@ export default function Dashboard() {
       return;
     }
 
+    // Check if we have an ID token
+    if (!session?.idToken) {
+      alert('Authentication required. Please log in again.');
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     
@@ -64,6 +70,7 @@ export default function Dashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.idToken}`,
         },
         body: JSON.stringify({ idea: ideaText }),
       });
@@ -71,16 +78,17 @@ export default function Dashboard() {
       const data = await response.json();
       
       if (data.success) {
-        // Deduct 2 credits on successful requirement generation
-        const creditsDeducted = await deductCredits(2);
-        if (!creditsDeducted) {
-          console.error('Failed to deduct credits');
+        // Update user data with the response
+        if (data.user) {
+          // The backend now returns updated user data, so we can update our local state
+          // No need to manually deduct credits as it's handled by the backend
         }
         setResult(data);
       } else {
         setResult(data);
       }
-    } catch {
+    } catch (error) {
+      console.error('API call failed:', error);
       setResult({
         success: false,
         error: 'Failed to connect to the server. Please try again.',
