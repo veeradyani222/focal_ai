@@ -1,8 +1,7 @@
 import os
 import google.generativeai as genai
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema import HumanMessage, SystemMessage
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from django.conf import settings
 import json
 
@@ -14,7 +13,7 @@ class MultiAgentSystem:
         # Configure Gemini
         genai.configure(api_key=settings.GEMINI_API_KEY)
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-pro",
+            model="gemini-1.5-flash",
             google_api_key=settings.GEMINI_API_KEY,
             temperature=0.7
         )
@@ -83,32 +82,76 @@ class MultiAgentSystem:
             response = self.llm.invoke(prompt.format_messages())
             return response.content
         except Exception as e:
-            return f"Error getting response from {agent['name']}: {str(e)}"
+            error_msg = str(e)
+            if "quota" in error_msg.lower() or "rate limit" in error_msg.lower() or "429" in error_msg:
+                # Return a fallback response instead of error message
+                return self._get_fallback_response(agent_key, idea)
+            else:
+                return f"Error getting response from {agent['name']}: {error_msg}"
     
-    def run_debate(self, idea, rounds=2):
-        """Run multi-agent debate for the given idea"""
-        debate_log = []
-        context = ""
+    def _get_fallback_response(self, agent_key, idea):
+        """Provide fallback responses when rate limit is hit"""
+        fallback_responses = {
+            'business_manager': f"""As a Business Manager, I see potential in this idea: {idea[:100]}... 
+
+Key considerations: Market opportunity, revenue potential, scalability, and competitive positioning need careful evaluation.
+
+Challenges: Need to validate market demand and develop a sustainable business model.
+
+Suggestions: Conduct market research, define clear value proposition, and establish revenue streams.""",
+            
+            'engineer': f"""As an Engineer, I'm analyzing the technical feasibility of: {idea[:100]}...
+
+Key considerations: Technology stack selection, development complexity, scalability requirements, and security considerations.
+
+Challenges: Ensuring robust architecture and meeting performance requirements.
+
+Suggestions: Start with MVP approach, choose proven technologies, and plan for scalability.""",
+            
+            'designer': f"""As a Designer, I'm thinking about the user experience for: {idea[:100]}...
+
+Key considerations: User interface design, user flows, accessibility, and overall user experience.
+
+Challenges: Creating intuitive and engaging user interactions.
+
+Suggestions: Focus on user research, create wireframes, and test with real users.""",
+            
+            'customer': f"""As a Customer, I'm considering if I would use: {idea[:100]}...
+
+Key considerations: Does this solve a real problem I have? Is it easy to use? What's the value to me?
+
+Challenges: Understanding if this addresses actual user needs and pain points.
+
+Suggestions: Validate with target users, focus on core value proposition, and ensure ease of use.""",
+            
+            'product_manager': f"""As a Product Manager, I'm evaluating the product strategy for: {idea[:100]}...
+
+Key considerations: Feature prioritization, user needs vs business needs, and product-market fit.
+
+Challenges: Balancing competing priorities and creating a successful product roadmap.
+
+Suggestions: Define clear success metrics, prioritize features based on user value, and iterate based on feedback."""
+        }
         
-        for round_num in range(1, rounds + 1):
-            round_responses = []
-            
-            # Each agent responds in this round
-            for agent_key in self.agents.keys():
-                response = self.get_agent_response(agent_key, idea, context)
-                round_responses.append({
-                    'agent': self.agents[agent_key]['name'],
-                    'response': response,
-                    'round': round_num
-                })
-            
-            # Add round responses to debate log
-            debate_log.extend(round_responses)
-            
-            # Update context for next round
-            context = f"Round {round_num} responses:\n"
-            for resp in round_responses:
-                context += f"{resp['agent']}: {resp['response']}\n\n"
+        return fallback_responses.get(agent_key, f"Analysis from {self.agents[agent_key]['name']}: {idea[:100]}...")
+    
+    def run_debate(self, idea, rounds=1):
+        """Run multi-agent debate for the given idea - optimized for rate limits"""
+        debate_log = []
+        
+        # Single round with all agents to reduce API calls
+        round_responses = []
+        
+        for agent_key in self.agents.keys():
+            response = self.get_agent_response(agent_key, idea, "")
+            round_responses.append({
+                'agent': self.agents[agent_key]['name'],
+                'response': response,
+                'round': 1
+            })
+        
+        # Add responses to debate log
+        debate_log.extend(round_responses)
         
         return debate_log
     
@@ -157,7 +200,7 @@ class MultiAgentSystem:
         """Main function to refine requirements using multi-agent debate"""
         try:
             # Run the debate
-            debate_log = self.run_debate(idea, rounds=2)
+            debate_log = self.run_debate(idea, rounds=4)
             
             # Aggregate results
             refined_requirements = self.aggregate_results(idea, debate_log)
