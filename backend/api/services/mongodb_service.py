@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from django.conf import settings
 import json
 from datetime import datetime
+from bson import ObjectId
 
 
 class MongoDBService:
@@ -16,6 +17,8 @@ class MongoDBService:
         self.ideas_collection = self.db.ideas
         self.debates_collection = self.db.debates
         self.requirements_collection = self.db.requirements
+        self.users_collection = self.db.users
+        self.credit_transactions_collection = self.db.credit_transactions
     
     def save_idea(self, idea_data):
         """Save idea to MongoDB"""
@@ -116,6 +119,166 @@ class MongoDBService:
             'debate_rounds': debate_rounds,
             'requirement': requirement
         }
+    
+    # User Management Methods
+    def create_user(self, user_data):
+        """Create a new user with initial 10 credits"""
+        user_doc = {
+            'email': user_data['email'],
+            'name': user_data.get('name', ''),
+            'avatar': user_data.get('picture', ''),  # Google OAuth provides 'picture' field
+            'credits': 10,  # Initial credits
+            'created_at': datetime.utcnow(),
+            'last_login': datetime.utcnow(),
+            'is_active': True
+        }
+        
+        result = self.users_collection.insert_one(user_doc)
+        user_id = str(result.inserted_id)
+        
+        # Log initial credit transaction
+        self.log_credit_transaction(
+            user_id=user_id,
+            transaction_type='initial',
+            amount=10,
+            description='Initial credits upon account creation'
+        )
+        
+        return user_id
+    
+    def get_user_by_email(self, email):
+        """Get user by email"""
+        user = self.users_collection.find_one({'email': email})
+        if user:
+            user['_id'] = str(user['_id'])
+        return user
+    
+    def get_user_by_id(self, user_id):
+        """Get user by ID"""
+        try:
+            user = self.users_collection.find_one({'_id': ObjectId(user_id)})
+            if user:
+                user['_id'] = str(user['_id'])
+            return user
+        except:
+            return None
+    
+    def update_user_login(self, user_id):
+        """Update user's last login time"""
+        try:
+            self.users_collection.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$set': {'last_login': datetime.utcnow()}}
+            )
+            return True
+        except:
+            return False
+    
+    def update_user_profile(self, user_id, profile_data):
+        """Update user profile information"""
+        try:
+            update_data = {}
+            if 'name' in profile_data:
+                update_data['name'] = profile_data['name']
+            if 'avatar' in profile_data:
+                update_data['avatar'] = profile_data['avatar']
+            
+            if update_data:
+                self.users_collection.update_one(
+                    {'_id': ObjectId(user_id)},
+                    {'$set': update_data}
+                )
+            return True
+        except:
+            return False
+    
+    # Credit Management Methods
+    def get_user_credits(self, user_id):
+        """Get user's current credit balance"""
+        try:
+            user = self.users_collection.find_one({'_id': ObjectId(user_id)})
+            return user.get('credits', 0) if user else 0
+        except:
+            return 0
+    
+    def deduct_credits(self, user_id, amount=2, description='Requirement generation'):
+        """Deduct credits from user account"""
+        try:
+            # Check if user has sufficient credits
+            current_credits = self.get_user_credits(user_id)
+            if current_credits < amount:
+                return False, f"Insufficient credits. Required: {amount}, Available: {current_credits}"
+            
+            # Deduct credits
+            result = self.users_collection.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$inc': {'credits': -amount}}
+            )
+            
+            if result.modified_count > 0:
+                # Log the transaction
+                self.log_credit_transaction(
+                    user_id=user_id,
+                    transaction_type='deduction',
+                    amount=-amount,
+                    description=description
+                )
+                return True, f"Successfully deducted {amount} credits"
+            else:
+                return False, "Failed to deduct credits"
+                
+        except Exception as e:
+            return False, f"Error deducting credits: {str(e)}"
+    
+    def add_credits(self, user_id, amount, description='Credit purchase'):
+        """Add credits to user account"""
+        try:
+            result = self.users_collection.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$inc': {'credits': amount}}
+            )
+            
+            if result.modified_count > 0:
+                # Log the transaction
+                self.log_credit_transaction(
+                    user_id=user_id,
+                    transaction_type='addition',
+                    amount=amount,
+                    description=description
+                )
+                return True, f"Successfully added {amount} credits"
+            else:
+                return False, "Failed to add credits"
+                
+        except Exception as e:
+            return False, f"Error adding credits: {str(e)}"
+    
+    def log_credit_transaction(self, user_id, transaction_type, amount, description):
+        """Log a credit transaction for audit trail"""
+        transaction_doc = {
+            'user_id': user_id,
+            'transaction_type': transaction_type,  # 'initial', 'deduction', 'addition'
+            'amount': amount,
+            'description': description,
+            'created_at': datetime.utcnow()
+        }
+        
+        self.credit_transactions_collection.insert_one(transaction_doc)
+    
+    def get_user_transactions(self, user_id, limit=20):
+        """Get user's credit transaction history"""
+        try:
+            transactions = list(self.credit_transactions_collection.find(
+                {'user_id': user_id}
+            ).sort('created_at', -1).limit(limit))
+            
+            # Convert ObjectId to string
+            for transaction in transactions:
+                transaction['_id'] = str(transaction['_id'])
+            
+            return transactions
+        except:
+            return []
     
     def close(self):
         """Close MongoDB connection"""

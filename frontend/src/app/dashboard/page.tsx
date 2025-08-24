@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Coins, AlertTriangle } from 'lucide-react';
 import InputBox from '../../components/InputBox';
 import ResultsDisplay from '../../components/ResultsDisplay';
 import LoadingAnimation from '../../components/LoadingAnimation';
 import { useAuth } from '../../hooks/useAuth';
+import { useUser } from '../../contexts/UserContext';
 
 interface RefinementResult {
   success: boolean;
@@ -22,6 +23,7 @@ interface RefinementResult {
 
 export default function Dashboard() {
   const { session, isAuthenticated, isLoading, logout, redirectToHome } = useAuth();
+  const { user, deductCredits, error: userError } = useUser();
   const [idea, setIdea] = useState('');
   const [result, setResult] = useState<RefinementResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,12 @@ export default function Dashboard() {
   }
 
   const handleRefineRequirements = async (ideaText: string) => {
+    // Check if user has enough credits
+    if (!user || user.credits < 2) {
+      alert('Insufficient credits. You need at least 2 credits to generate requirements.');
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     
@@ -61,7 +69,17 @@ export default function Dashboard() {
       });
 
       const data = await response.json();
-      setResult(data);
+      
+      if (data.success) {
+        // Deduct 2 credits on successful requirement generation
+        const creditsDeducted = await deductCredits(2);
+        if (!creditsDeducted) {
+          console.error('Failed to deduct credits');
+        }
+        setResult(data);
+      } else {
+        setResult(data);
+      }
     } catch {
       setResult({
         success: false,
@@ -98,16 +116,35 @@ export default function Dashboard() {
             </p>
           </div>
           
-          {/* User Menu */}
+          {/* User Menu with Credits and Avatar */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
+            {/* Credits Display */}
+            <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+              <Coins className="w-5 h-5 text-yellow-400" />
               <span className="text-white text-sm font-medium">
-                {session?.user?.name || 'User'}
+                {user?.credits || 0} Credits
               </span>
             </div>
+            
+            {/* User Profile */}
+            <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+              {user?.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={user.name || 'User'} 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <span className="text-white text-sm font-medium">
+                {user?.name || session?.user?.name || 'User'}
+              </span>
+            </div>
+            
+            {/* Logout Button */}
             <button
               onClick={logout}
               className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 px-4 py-2 rounded-xl border border-red-500/30 transition-all duration-300"
@@ -118,6 +155,27 @@ export default function Dashboard() {
           </div>
         </motion.header>
 
+        {/* Credits Warning */}
+        {user && user.credits < 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-6 mb-6"
+          >
+            <div className="max-w-4xl mx-auto bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-4 backdrop-blur-sm">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <p className="text-yellow-200 font-medium">Low Credits</p>
+                  <p className="text-yellow-300 text-sm">
+                    You have {user.credits} credits remaining. You need at least 2 credits to generate requirements.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Input box at top */}
         <div className="px-6 pb-8">
           <div className="max-w-4xl mx-auto">
@@ -125,7 +183,8 @@ export default function Dashboard() {
               value={idea}
               onChange={setIdea}
               onSubmit={handleRefineRequirements}
-              disabled={loading}
+              disabled={loading || !!(user && user.credits < 2)}
+              credits={user?.credits}
             />
           </div>
         </div>
