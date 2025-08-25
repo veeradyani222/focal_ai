@@ -146,6 +146,53 @@ class MongoDBService:
         ]
         
         return list(self.ideas_collection.aggregate(pipeline))
+
+    def get_idea_history_by_user(self, user_id, limit=50):
+        """Get user-specific idea history with requirements"""
+        pipeline = [
+            {
+                '$match': {'user_id': user_id}
+            },
+            {
+                '$lookup': {
+                    'from': 'requirements',
+                    'localField': '_id',
+                    'foreignField': 'idea_id',
+                    'as': 'requirements'
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'debates',
+                    'localField': '_id',
+                    'foreignField': 'idea_id',
+                    'as': 'debates'
+                }
+            },
+            {
+                '$addFields': {
+                    'debate_count': {'$size': '$debates'},
+                    'latest_requirement': {'$arrayElemAt': ['$requirements', -1]},
+                    'title': {
+                        '$cond': {
+                            'if': {'$ne': ['$title', '']},
+                            'then': '$title',
+                            'else': {
+                                '$substr': ['$description', 0, 50]
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                '$sort': {'created_at': -1}
+            },
+            {
+                '$limit': limit
+            }
+        ]
+        
+        return list(self.ideas_collection.aggregate(pipeline))
     
     def get_idea_details(self, idea_id):
         """Get detailed information about a specific idea"""

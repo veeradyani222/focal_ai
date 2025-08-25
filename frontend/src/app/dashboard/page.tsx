@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, User, Coins, AlertTriangle } from 'lucide-react';
+import { LogOut, User, Coins, AlertTriangle, Menu, X } from 'lucide-react';
 import InputBox from '../../components/InputBox';
 import ResultsDisplay from '../../components/ResultsDisplay';
 import LoadingAnimation from '../../components/LoadingAnimation';
+import ChatHistorySidebar from '../../components/ChatHistorySidebar';
+import IdeaDetailsView from '../../components/IdeaDetailsView';
 import { useAuth } from '../../hooks/useAuth';
 import { useUser } from '../../contexts/UserContext';
+import { useRouter } from 'next/navigation';
+import { BarChart3, ArrowRight } from 'lucide-react';
 
 interface RefinementResult {
   success: boolean;
@@ -24,11 +28,14 @@ interface RefinementResult {
 export default function Dashboard() {
   const { session, isAuthenticated, isLoading, logout, redirectToHome } = useAuth();
   const { user, deductCredits, error: userError } = useUser();
+  const router = useRouter();
   const [idea, setIdea] = useState('');
   const [result, setResult] = useState<RefinementResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState(true);
 
-  // Redirect to home if not authenticated
+  // Redirect to  if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       redirectToHome();
@@ -98,7 +105,26 @@ export default function Dashboard() {
     }
   };
 
-  return (
+  const handleSelectIdea = (ideaId: string) => {
+    setSelectedIdeaId(ideaId);
+    setResult(null); // Clear current result when viewing history
+  };
+
+  const handleNewChat = () => {
+    setSelectedIdeaId(null);
+    setResult(null);
+    setIdea('');
+  };
+
+  const handleBackFromHistory = () => {
+    setSelectedIdeaId(null);
+  };
+
+  const handleGoToOverview = () => {
+    router.push('/overview');
+  };
+
+    return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-cyan-900 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -107,61 +133,92 @@ export default function Dashboard() {
         <div className="absolute top-40 left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Header */}
-        <motion.header 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center py-8 px-6 max-w-7xl mx-auto"
-        >
-          <div className="text-center flex-1">
-            <h1 className="text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent mb-4 tracking-tight">
-              🧠 Focal AI
-            </h1>
-            <p className="text-purple-100 text-xl max-w-2xl mx-auto font-light leading-relaxed">
-              AI-powered requirement refinement through multi-agent stakeholder simulation
-            </p>
-          </div>
-          
-          {/* User Menu with Credits and Avatar */}
-          <div className="flex items-center space-x-4">
-            {/* Credits Display */}
-            <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-              <Coins className="w-5 h-5 text-yellow-400" />
-              <span className="text-white text-sm font-medium">
-                {user?.credits || 0} Credits
-              </span>
-            </div>
-            
-            {/* User Profile */}
-            <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-              {user?.avatar ? (
-                <img 
-                  src={user.avatar} 
-                  alt={user.name || 'User'} 
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-              )}
-              <span className="text-white text-sm font-medium">
-                {user?.name || session?.user?.name || 'User'}
-              </span>
-            </div>
-            
-            {/* Logout Button */}
-            <button
-              onClick={logout}
-              className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 px-4 py-2 rounded-xl border border-red-500/30 transition-all duration-300"
+      {/* Main layout */}
+      <div className="relative z-10 flex h-screen">
+        {/* Sidebar */}
+        <AnimatePresence mode="wait">
+          {showSidebar && (
+            <motion.div
+              initial={{ x: -320 }}
+              animate={{ x: 0 }}
+              exit={{ x: -320 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="h-full"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm font-medium">Logout</span>
-            </button>
-          </div>
-        </motion.header>
+              <ChatHistorySidebar
+                onSelectIdea={handleSelectIdea}
+                selectedIdeaId={selectedIdeaId || undefined}
+                onNewChat={handleNewChat}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col min-h-screen">
+          {/* Header */}
+          <motion.header 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-between items-center py-8 px-6 max-w-7xl mx-auto"
+          >
+            <div className="text-center flex-1">
+              <h1 className="text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent mb-4 tracking-tight">
+                🧠 Focal AI
+              </h1>
+              <p className="text-purple-100 text-xl max-w-2xl mx-auto font-light leading-relaxed">
+                AI-powered requirement refinement through multi-agent stakeholder simulation
+              </p>
+            </div>
+            
+            {/* User Menu with Credits and Avatar */}
+            <div className="flex items-center space-x-4">
+              {/* Overview Button */}
+              <button
+                onClick={handleGoToOverview}
+                className="flex items-center space-x-2 bg-gradient-to-r from-purple-600/20 to-cyan-600/20 hover:from-purple-600/30 hover:to-cyan-600/30 text-white px-4 py-2 rounded-xl border border-purple-500/30 transition-all duration-300 hover:scale-105"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-sm font-medium">Overview</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              
+              {/* Credits Display */}
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                <Coins className="w-5 h-5 text-yellow-400" />
+                <span className="text-white text-sm font-medium">
+                  {user?.credits || 0} Credits
+                </span>
+              </div>
+              
+              {/* User Profile */}
+              <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                {user?.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name || 'User'} 
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <span className="text-white text-sm font-medium">
+                  {user?.name || session?.user?.name || 'User'}
+                </span>
+              </div>
+              
+              {/* Logout Button */}
+              <button
+                onClick={logout}
+                className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 px-4 py-2 rounded-xl border border-red-500/30 transition-all duration-300"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm font-medium">Logout</span>
+              </button>
+            </div>
+          </motion.header>
 
         {/* Credits Warning */}
         {user && user.credits < 2 && (
@@ -184,49 +241,64 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Input box at top */}
-        <div className="px-6 pb-8">
-          <div className="max-w-4xl mx-auto">
-            <InputBox 
-              value={idea}
-              onChange={setIdea}
-              onSubmit={handleRefineRequirements}
-              disabled={loading || !!(user && user.credits < 2)}
-              credits={user?.credits}
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col">
+          {selectedIdeaId ? (
+            // Show idea details when an idea is selected
+            <IdeaDetailsView 
+              ideaId={selectedIdeaId} 
+              onBack={handleBackFromHistory} 
             />
-          </div>
-        </div>
+          ) : (
+            // Show input and results when no idea is selected
+            <>
+              {/* Input box at top */}
+              <div className="px-6 pb-8">
+                <div className="max-w-4xl mx-auto">
+                  <InputBox 
+                    value={idea}
+                    onChange={setIdea}
+                    onSubmit={handleRefineRequirements}
+                    disabled={loading || !!(user && user.credits < 2)}
+                    credits={user?.credits}
+                  />
+                </div>
+              </div>
 
-        {/* Results area */}
-        <div className="flex-1 px-6 pb-8">
-          <div className="max-w-4xl mx-auto">
-            <AnimatePresence mode="wait">
-              {loading && (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="mb-6"
-                >
-                  <LoadingAnimation />
-                </motion.div>
-              )}
+              {/* Results area */}
+              <div className="flex-1 px-6 pb-8">
+                <div className="max-w-4xl mx-auto">
+                  <AnimatePresence mode="wait">
+                    {loading && (
+                      <motion.div
+                        key="loading"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="mb-6"
+                      >
+                        <LoadingAnimation />
+                      </motion.div>
+                    )}
 
-              {result && (
-                <motion.div
-                  key="results"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6"
-                >
-                  <ResultsDisplay result={result} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                    {result && (
+                      <motion.div
+                        key="results"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6"
+                      >
+                        <ResultsDisplay result={result} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
+    </div>
 
       {/* Custom animations */}
       <style jsx>{`

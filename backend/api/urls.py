@@ -10,6 +10,9 @@ urlpatterns = [
     # Main functionality
     path('refine/', views.refine_requirements, name='refine_requirements'),
     path('history/', views.get_history, name='get_history'),
+    path('user-history/', views.get_user_history, name='get_user_history'),
+    path('generate-title/', views.generate_title, name='generate_title'),
+    path('user-insights/', views.get_user_insights, name='get_user_insights'),
     path('idea/<int:idea_id>/', views.get_idea_details, name='get_idea_details'),
     
     # User Management URLs (now require authentication)
